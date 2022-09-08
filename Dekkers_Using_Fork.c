@@ -54,7 +54,7 @@ void parent(){
 }
 
 int main(){
-    int shmid = shmget(1234, N*sizeof(SHARED), IPC_CREAT | 0777);
+    int shmid = shmget(1234, sizeof(SHARED), IPC_CREAT | 0777);
     if(shmid < 0){
         perror("Failed TO Get Shared Memory\n");
         exit(0);
