@@ -103,7 +103,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < n; ++i)
     {
         pthread_create(&threads[i], NULL, &thread_body, (void *)((long)i));
-    }
+    }   
 
     for (int i = 0; i < n; ++i)
     {

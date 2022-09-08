@@ -30,10 +30,8 @@ void child(){
                 ;
         }
     }
-    for(int i = 0; i < N; i++){
-        smp->sharedVar += 1;
-        printf("Child Process : %d\n", smp->sharedVar);
-    }
+    smp->sharedVar += 1;
+    // printf("Child Process : %d\n", smp->sharedVar);
 
     smp->child_wants_to_enter = 0;
     smp->turn = 1;
@@ -49,10 +47,8 @@ void parent(){
                 ;
         }
     }
-    for(int i = 0; i < N; i++){
-        smp->sharedVar += 1;
-        printf("Parent Process : %d\n", smp->sharedVar);
-    }
+    smp->sharedVar += 1;
+    // printf("Parent Process : %d\n", smp->sharedVar);
     smp->parent_wants_to_enter = 0;
     smp->turn = 0;
 }
@@ -68,16 +64,12 @@ int main(){
         perror("Shared Memory Attach Failed\n");
         exit(0);
     }
-    for(int i = 1; i < N+1; i++){
-        smp->child_wants_to_enter = 0;
-        smp->parent_wants_to_enter = 0;
-        smp->turn = 0;
-        smp->sharedVar = 0;
-    }
+    smp->child_wants_to_enter = 0;
+    smp->parent_wants_to_enter = 0;
+    smp->turn = 0;
+    smp->sharedVar = 0;
     
-    for(int i = 0; i < N; i++){
-        printf("Initial Value : %d\n", smp->sharedVar);
-    }
+    printf("Initial Value : %d\n", smp->sharedVar);
 
     int rc = fork();
     if(-1 == rc){
@@ -92,6 +84,7 @@ int main(){
         wait(NULL);
     }
     }
+    printf("Final Value : %d\n", smp->sharedVar);
     return 0;
 }
 
