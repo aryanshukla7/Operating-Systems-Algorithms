@@ -12,9 +12,10 @@
 #include <sys/shm.h>
 #include <sys/wait.h>
 
+#define BUFFER_SIZE 10
 #define THREAD_NUM 2
 
-int buffer[10];
+int buffer[BUFFER_SIZE];
 int count = 0;
 pthread_mutex_t mutexBuffer;
 sem_t semEmpty;
@@ -41,7 +42,7 @@ void* consumer(void* args) {
         sem_wait(&semFull);
         pthread_mutex_lock(&mutexBuffer);
         int y = buffer[count - 1];
-        count--;
+        count -= 1;
         pthread_mutex_unlock(&mutexBuffer);
         sem_post(&semEmpty);
         // Consume
