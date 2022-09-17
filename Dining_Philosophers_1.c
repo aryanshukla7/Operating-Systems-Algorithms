@@ -20,24 +20,15 @@ pthread_mutex_t mutex;
 
 void* philosopher(void* arg){
     int p_num = *((int*)arg);
-    for(int i = 0; i < RUNS; i++){
-        // pthread_mutex_lock(&mutex);
-        if(p_num < NUM_PHILOSOPHERS-1){
-            sem_wait(&forks[p_num]);
-            sem_wait(&forks[(p_num+1)%NUM_PHILOSOPHERS]);
-            // pthread_mutex_unlock(&mutex);
-            printf("Philosopher %d is eating\n", p_num);
-            sem_post(&forks[(p_num+1)%NUM_PHILOSOPHERS]);
-            sem_post(&forks[p_num]);
-        } else {
-            sem_wait(&forks[(p_num+1)%NUM_PHILOSOPHERS]);
-            sem_wait(&forks[p_num]);
-            // pthread_mutex_unlock(&mutex);
-            printf("Philosopher %d is eating\n", p_num);
-            sem_post(&forks[p_num]); 
-            sem_post(&forks[(p_num+1)%NUM_PHILOSOPHERS]);
-        }
-        
+    while(1){
+        pthread_mutex_lock(&mutex);
+        sem_wait(&forks[p_num]);
+        // sleep(5);
+        sem_wait(&forks[(p_num+1)%NUM_PHILOSOPHERS]);
+        pthread_mutex_unlock(&mutex);
+        printf("Philosopher %d is eating\n", p_num);
+        sem_post(&forks[(p_num+1)%NUM_PHILOSOPHERS]);
+        sem_post(&forks[p_num]);
     }
 }
 
