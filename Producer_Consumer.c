@@ -43,10 +43,10 @@ void* consumer(void* args) {
         pthread_mutex_lock(&mutexBuffer);
         int y = buffer[count - 1];
         count -= 1;
-        pthread_mutex_unlock(&mutexBuffer);
-        sem_post(&semEmpty);
         // Consume
         printf("Consumed : %d\n", buffer[count]);
+        pthread_mutex_unlock(&mutexBuffer);
+        sem_post(&semEmpty);
     }
 
 }
