@@ -1,114 +1,160 @@
-#include "pthread.h"
-#include "stdio.h"
-#include "unistd.h"
-#include "string.h"
-#include <stdio.h>
-#include <stdlib.h>
+//Submitted by : Ashutosh Soni
+
+// Header file include
+#include <bits/stdc++.h>
+#include <pthread.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/wait.h>
+using namespace std;
 
-#define n 5
+#define N 10
+#define THINKING 2
+#define HUNGRY 1
+#define EATING 0
+#define LEFT (phnum + 4) % N
+#define RIGHT (phnum + 1) % N
 
-int tickets[n];
-int choosing[n];
-int shmid;
-int* sharedVariable;
+// Philosopher index
+int phil[N];
+int times = 200;
 
+class monitor {
 
-int max(int *arr)
-{
-    int i, max = arr[0];
-    for (i = 1; i < n; i++)
-        if (tickets[i] > max)
-            return tickets[i];
-    return tickets[0];
+	// state of the philosopher
+	int state[N];
+
+	// Philosopher condition variable
+	pthread_cond_t phcond[N];
+
+	// mutex variable for synchronization
+	pthread_mutex_t condLock;
+
+public:
+	// Test for the desired condition
+	// i.e. Left and Right philosopher are not reading
+	void test(int phnum)
+	{
+
+		if (state[(phnum + 1) % 5] != EATING
+			and state[(phnum + 4) % 5] != EATING
+			and state[phnum] == HUNGRY) {
+			state[phnum] = EATING;
+
+			pthread_cond_signal(&phcond[phnum]);
+		}
+	}
+
+	// Take Fork function
+	void take_fork(int phnum)
+	{
+
+		pthread_mutex_lock(&condLock);
+
+		// Indicates it is hungry
+		state[phnum] = HUNGRY;
+
+		// test for condition
+		test(phnum);
+
+		// If unable to eat.. wait for the signal
+		if (state[phnum] != EATING) {
+			pthread_cond_wait(&phcond[phnum], &condLock);
+		}
+		cout << "Philosopher " << phnum << " is Eating"
+			<< endl;
+
+		pthread_mutex_unlock(&condLock);
+	}
+
+	// Put Fork function
+	void put_fork(int phnum)
+	{
+
+		pthread_mutex_lock(&condLock);
+
+		// Indicates that I am thinking
+		state[phnum] = THINKING;
+
+		test(RIGHT);
+		test(LEFT);
+
+		pthread_mutex_unlock(&condLock);
+	}
+
+	// constructor
+	monitor()
+	{
+
+		for (int i = 0; i < N; i++) {
+			state[i] = THINKING;
+		}
+
+		for (int i = 0; i < N; i++) {
+			pthread_cond_init(&phcond[i], NULL);
+		}
+
+		pthread_mutex_init(&condLock, NULL);
+	}
+
+	// destructor
+	~monitor()
+	{
+
+		for (int i = 0; i < N; i++) {
+			pthread_cond_destroy(&phcond[i]);
+		}
+
+		pthread_mutex_destroy(&condLock);
+	}
 }
-void lock(int x)
+
+// Global Object of the monitor
+phil_object;
+
+void* philosopher(void* arg)
 {
-
-    choosing[x] = 1;
-    int max_ticket = max(tickets);
-    tickets[x] = max_ticket + 1;
-    choosing[x] = 0;
-
-    for (int k = 0; k < n; ++k)
-    {
-
-        while (choosing[k])
-        {
-            ;
-        }
-
-        while (tickets[k] != 0 && (tickets[k], k) < (tickets[x], x))
-        {
-            ;
-        }
-    }
+	int c = 0;
+	while (c < times) {
+		int i = *(int*)arg;
+		sleep(1);
+		phil_object.take_fork(i);
+		sleep(0.5);
+		phil_object.put_fork(i);
+		c++;
+	}
 }
 
-void unlock(int x)
-{
-    tickets[x] = 0;
-}
-
-void *thread_body(void *arg)
+int main()
 {
 
-    long thread = (long)arg;
-    lock(thread);
-    printf("%ld thread is in critical section \n", thread);
-    *sharedVariable = *sharedVariable + 1;
-    printf("Shared Variable: %d\n", *sharedVariable);
-    printf("%ld thread is out of critical section \n", thread);
-    
-    unlock(thread);
-    return NULL;
-}
+	// Declaration...
+	pthread_t thread_id[N];
+	pthread_attr_t attr;
 
-int main(int argc, char **argv)
-{
+	// Initialization...
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr,
+								PTHREAD_CREATE_JOINABLE);
 
-    memset((void *)tickets, 0, sizeof(tickets));
-    memset((void *)choosing, 0, sizeof(choosing));
+	for (int i = 0; i < N; i++) {
+		phil[i] = i;
+	}
 
-    pthread_t threads[n];
+	// Creating...
+	for (int i = 0; i < N; i++) {
+		pthread_create(&thread_id[i], &attr, philosopher,
+					&phil[i]);
+		cout << "Philosopher " << i + 1 << " is thinking..."
+			<< endl;
+	}
 
-    shmid = shmget(1234, 1 * sizeof(int), IPC_CREAT | 0777);
-    if (shmid < 0)
-    {
-        perror("PARENT: Failed to get shared memory segment\n");
-        exit(0);
-    }
-    printf("PARENT: Shared memory obtained\n");
-    printf("shmid = %d \t ptr = %p\n", shmid, sharedVariable);
-    // Parent process attaches shared segment to its address sprocessNumberce
-    sharedVariable = (int *)shmat(shmid, (void *)0, 0);
+	// Joining....
+	for (int i = 0; i < N; i++) {
+		pthread_join(thread_id[i], NULL);
+	}
 
-    if ((void *)-1 == sharedVariable)
-    {
-        perror("Failed: \n");
-        exit(0);
-    }
-    printf("PARENT %p \n", sharedVariable);
-    if (NULL == sharedVariable)
-    {
-        printf("PARENT: Failed to attach shared memory segment.\n");
-        exit(0);
-    }
+	// Destroying
+	pthread_attr_destroy(&attr);
+	pthread_exit(NULL);
 
-    *sharedVariable = 0;
-    for (int i = 0; i < n; ++i)
-    {
-        pthread_create(&threads[i], NULL, &thread_body, (void *)((long)i));
-    }   
-
-    for (int i = 0; i < n; ++i)
-    {
-        pthread_join(threads[i], NULL);
-    }
-
-    return 0;
+	return 0;
 }

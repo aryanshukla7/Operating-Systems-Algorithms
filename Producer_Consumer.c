@@ -55,7 +55,7 @@ void* consumer(void* args) {
 int main(){
     srand(time(NULL));
     pthread_t th[THREAD_NUM];
-    sem_init(&semEmpty, 0, 10);
+    sem_init(&semEmpty, 0, BUFFER_SIZE);
     sem_init(&semFull, 0, 0);
     pthread_mutex_init(&mutexBuffer, NULL);
     for(int i = 0; i < THREAD_NUM; i++){
