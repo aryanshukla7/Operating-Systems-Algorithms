@@ -1,160 +1,109 @@
-//Submitted by : Ashutosh Soni
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <dirent.h>
 
-// Header file include
-#include <bits/stdc++.h>
-#include <pthread.h>
-#include <unistd.h>
-using namespace std;
+typedef struct counter {
+  size_t dirs;
+  size_t files;
+} counter_t;
 
-#define N 10
-#define THINKING 2
-#define HUNGRY 1
-#define EATING 0
-#define LEFT (phnum + 4) % N
-#define RIGHT (phnum + 1) % N
+typedef struct entry {
+  char *name;
+  int is_dir;
+  struct entry *next;
+} entry_t;
 
-// Philosopher index
-int phil[N];
-int times = 200;
+int walk(const char* directory, const char* prefix, counter_t *counter) {
+  entry_t *head = NULL, *current, *iter;
+  size_t size = 0, index;
 
-class monitor {
+  struct dirent *file_dirent;
+  DIR *dir_handle;
 
-	// state of the philosopher
-	int state[N];
+  char *full_path, *segment, *pointer, *next_prefix;
 
-	// Philosopher condition variable
-	pthread_cond_t phcond[N];
+  dir_handle = opendir(directory);
+  if (!dir_handle) {
+    fprintf(stderr, "Cannot open directory \"%s\"\n", directory);
+    return -1;
+  }
 
-	// mutex variable for synchronization
-	pthread_mutex_t condLock;
+  counter->dirs++;
 
-public:
-	// Test for the desired condition
-	// i.e. Left and Right philosopher are not reading
-	void test(int phnum)
-	{
+  while ((file_dirent = readdir(dir_handle)) != NULL) {
+    if (file_dirent->d_name[0] == '.') {
+      continue;
+    }
 
-		if (state[(phnum + 1) % 5] != EATING
-			and state[(phnum + 4) % 5] != EATING
-			and state[phnum] == HUNGRY) {
-			state[phnum] = EATING;
+    current = malloc(sizeof(entry_t));
+    current->name = strcpy(malloc(strlen(file_dirent->d_name) + 1), file_dirent->d_name);
+    current->is_dir = file_dirent->d_type == DT_DIR;
+    current->next = NULL;
 
-			pthread_cond_signal(&phcond[phnum]);
-		}
-	}
+    if (head == NULL) {
+      head = current;
+    } else if (strcmp(current->name, head->name) < 0) {
+      current->next = head;
+      head = current;
+    } else {
+      for (iter = head; iter->next && strcmp(current->name, iter->next->name) > 0; iter = iter->next);
 
-	// Take Fork function
-	void take_fork(int phnum)
-	{
+      current->next = iter->next;
+      iter->next = current;
+    }
 
-		pthread_mutex_lock(&condLock);
+    size++;
+  }
 
-		// Indicates it is hungry
-		state[phnum] = HUNGRY;
+  closedir(dir_handle);
+  if (!head) {
+    return 0;
+  }
 
-		// test for condition
-		test(phnum);
+  for (index = 0; index < size; index++) {
+    if (index == size - 1) {
+      pointer = "└── ";
+      segment = "    ";
+    } else {
+      pointer = "├── ";
+      segment = "│   ";
+    }
 
-		// If unable to eat.. wait for the signal
-		if (state[phnum] != EATING) {
-			pthread_cond_wait(&phcond[phnum], &condLock);
-		}
-		cout << "Philosopher " << phnum << " is Eating"
-			<< endl;
+    printf("%s%s%s\n", prefix, pointer, head->name);
 
-		pthread_mutex_unlock(&condLock);
-	}
+    if (head->is_dir) {
+      full_path = malloc(strlen(directory) + strlen(head->name) + 2);
+      sprintf(full_path, "%s/%s", directory, head->name);
 
-	// Put Fork function
-	void put_fork(int phnum)
-	{
+      next_prefix = malloc(strlen(prefix) + strlen(segment) + 1);
+      sprintf(next_prefix, "%s%s", prefix, segment);
 
-		pthread_mutex_lock(&condLock);
+      walk(full_path, next_prefix, counter);
+      free(full_path);
+      free(next_prefix);
+    } else {
+      counter->files++;
+    }
 
-		// Indicates that I am thinking
-		state[phnum] = THINKING;
+    current = head;
+    head = head->next;
 
-		test(RIGHT);
-		test(LEFT);
+    free(current->name);
+    free(current);
+  }
 
-		pthread_mutex_unlock(&condLock);
-	}
-
-	// constructor
-	monitor()
-	{
-
-		for (int i = 0; i < N; i++) {
-			state[i] = THINKING;
-		}
-
-		for (int i = 0; i < N; i++) {
-			pthread_cond_init(&phcond[i], NULL);
-		}
-
-		pthread_mutex_init(&condLock, NULL);
-	}
-
-	// destructor
-	~monitor()
-	{
-
-		for (int i = 0; i < N; i++) {
-			pthread_cond_destroy(&phcond[i]);
-		}
-
-		pthread_mutex_destroy(&condLock);
-	}
+  return 0;
 }
 
-// Global Object of the monitor
-phil_object;
+int main(int argc, char *argv[]) {
+  char* directory = argc > 1 ? argv[1] : ".";
+  printf("%s\n", directory);
 
-void* philosopher(void* arg)
-{
-	int c = 0;
-	while (c < times) {
-		int i = *(int*)arg;
-		sleep(1);
-		phil_object.take_fork(i);
-		sleep(0.5);
-		phil_object.put_fork(i);
-		c++;
-	}
-}
+  counter_t counter = {0, 0};
+  walk(directory, "", &counter);
 
-int main()
-{
-
-	// Declaration...
-	pthread_t thread_id[N];
-	pthread_attr_t attr;
-
-	// Initialization...
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr,
-								PTHREAD_CREATE_JOINABLE);
-
-	for (int i = 0; i < N; i++) {
-		phil[i] = i;
-	}
-
-	// Creating...
-	for (int i = 0; i < N; i++) {
-		pthread_create(&thread_id[i], &attr, philosopher,
-					&phil[i]);
-		cout << "Philosopher " << i + 1 << " is thinking..."
-			<< endl;
-	}
-
-	// Joining....
-	for (int i = 0; i < N; i++) {
-		pthread_join(thread_id[i], NULL);
-	}
-
-	// Destroying
-	pthread_attr_destroy(&attr);
-	pthread_exit(NULL);
-
-	return 0;
+  printf("\n%zu directories, %zu files\n",
+    counter.dirs ? counter.dirs - 1 : 0, counter.files);
+  return 0;
 }
