@@ -33,15 +33,20 @@ int main() {
         cout << i << " ";
     }
     cout << "\n";
-    cout << "Average Rotational Delay: " << (60*1000)/rpm << " ms\n";
+    cout << "Average Rotational Delay: " << (60*1000)/(2*rpm) << " ms\n";
     sort(reqQueue.begin(), reqQueue.end());
     int largestBeforeInit = 0;
     for(auto i : reqQueue) {
-        if(i < initialHeadPos) {
+        if(i <= initialHeadPos) {
             largestBeforeInit = max(largestBeforeInit, i);
         }
     }
 
+    // When initial Head points to minimum request query, the arm does not come back
+    // as all the requests are handled in one forward sweep only.
     int totalSeekTime = abs(numTracks-initialHeadPos) + numTracks + largestBeforeInit;
+    if(largestBeforeInit == initialHeadPos) {
+        totalSeekTime = abs(numTracks - initialHeadPos);
+    }
     cout << "Total Seek Time using CSCAN: " << totalSeekTime*avgSeekTime << " ms\n";
 } 

@@ -37,7 +37,7 @@ int main() {
         cout << i << " ";
     }
     cout << "\n";
-    cout << "Average Rotational Delay: " << (60*1000)/rpm << " ms\n";
+    cout << "Average Rotational Delay: " << (60*1000)/(2*rpm)  << " ms\n";
     for(auto i : reqQueue) {
         totalSeekTime += abs(i-prevReq);
         prevReq = i;

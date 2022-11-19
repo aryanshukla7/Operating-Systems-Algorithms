@@ -24,7 +24,6 @@ void* reader(){
     printf("Finished Reading : %d\n", sharedVar);
     sem_post(&writing);
     
-
 }
 
 void* writer(){
