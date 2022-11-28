@@ -55,6 +55,11 @@ void sort(int arr[], int n) {
 int main() {
     ifstream inputFile;
     inputFile.open("input.txt");
+    // N -> NUm of elements in the array
+    // SEED -> used to generate random integer array
+    // LOW -> generated random numbers will be more than this
+    // HIGH -> generated random numbers will be less than this
+    // Q -> minimum allwed auxiliary array space
     int N, SEED, LOW, HIGH, Q;
     if(inputFile.fail()) {
         cerr << "Please Provide correct input file.\n";
