@@ -8,7 +8,7 @@ using namespace std;
 // in another text file, (output.txt). This will totally eliminate an extra N-space being used to store auxiliary array.
 // Total space being used = N (to store input array) + k (constant space to store intermediate variables (less than 20 being used here)) < N + Q, where N/10 <= Q <= N/2
 void merge(int arr[], int low, int mid, int high) {
-    int i = low, j = mid+1, k = low;
+    int i = low, j = mid+1;
     // auxiliary file used to store intermediate output
     ofstream aux;
     aux.open("output.txt");
@@ -28,10 +28,10 @@ void merge(int arr[], int low, int mid, int high) {
     aux.close();
     ifstream auxRead;
     auxRead.open("output.txt");
-    int m = low;
     for(int m = low; m <= high; m++){
         auxRead >> arr[m];
     }
+    auxRead.close();
 }
 
 
@@ -66,11 +66,13 @@ int main() {
         exit(0);
     }
     inputFile >> N >> SEED >> LOW >> HIGH >> Q;
+    inputFile.close();
     // SEED = Last two digits of my roll number = 77
     srand(SEED);
     int arr[N];
     for(int i = 0; i < N; i++) {
-        int randomNum = rand()%HIGH + LOW;
+        // To generate numbers between LOW and HIGH
+        int randomNum = rand()%(HIGH-LOW) + LOW;
         // Input array will take up N space, We now have Q space left to work with, Q < N.
         arr[i] = randomNum;
     }
